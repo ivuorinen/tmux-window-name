@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
 
-# I hate this but i don't want to make it a pip package, its a script.
-import sys
-from typing import List, Optional, Tuple
-from dataclasses import dataclass
+from typing import Optional
 
-sys.path.append('scripts/')
-
-from path_utils import get_exclusive_paths, Pane
+from scripts.path_utils import Pane as PathPane
+from scripts.path_utils import get_exclusive_paths
+from tests.mocks import Pane as MockPane
 
 
-@dataclass
-class FakePane:
-    pane_current_path: str | None
+def _fake_pane(path: str, program: Optional[str]) -> PathPane:
+    # Use the wrapper Pane from path_utils, with a mock Pane as info
+    return PathPane(
+        info=MockPane(pane_current_path=path, pane_current_command='', pane_pid=1234, pane_active='1'), program=program
+    )
 
 
-def _fake_pane(path: str, program: Optional[str]):
-    return Pane(FakePane(path), program)
-
-
-def _check(expected: List[Tuple[str, Optional[str], str]]):
+def _check(expected: list[tuple[str, Optional[str], str]]):
     """check expected displayed paths
 
     Args:
@@ -33,7 +28,7 @@ def _check(expected: List[Tuple[str, Optional[str], str]]):
     """
     panes = [_fake_pane(full, program) for full, program, _ in expected]
     exclusive_panes = get_exclusive_paths(panes)
-    for (full, _, expected_display), (_, display) in zip(expected, exclusive_panes):
+    for (_full, _, expected_display), (_, display) in zip(expected, exclusive_panes):
         assert str(display) == expected_display
 
 
@@ -75,6 +70,93 @@ def test_not_same_length():
         [
             ('a/b/dir', None, 'a/b/dir'),
             ('b/dir', None, 'b/dir'),
+        ]
+    )
+
+
+def test_deeply_nested_directories():
+    _check(
+        [
+            ('/a/b/c/d/e', None, 'e'),
+            ('/a/b/c/d/f', None, 'f'),
+            ('/a/b/c/g/h', None, 'h'),
+        ]
+    )
+
+
+def test_overlapping_paths():
+    _check(
+        [
+            ('/home/user/project', None, 'project'),
+            ('/home/user/project2', None, 'project2'),
+            ('/home/user/project/subdir', None, 'subdir'),
+        ]
+    )
+
+
+def test_common_prefixes():
+    _check(
+        [
+            ('/src/app', None, 'app'),
+            ('/src/api', None, 'api'),
+            ('/src/assets', None, 'assets'),
+        ]
+    )
+
+
+def test_edge_cases():
+    # Empty path list
+    panes = []
+    exclusive_panes = get_exclusive_paths(panes)
+    assert exclusive_panes == []
+
+    # Single path
+    _check(
+        [
+            ('/only/path', None, 'path'),
+        ]
+    )
+
+    # All identical paths
+    _check(
+        [
+            ('/same/path', None, 'path'),
+            ('/same/path', None, 'path'),
+            ('/same/path', None, 'path'),
+        ]
+    )
+
+
+def test_get_uncommon_path_indexerror_branch():
+    # This covers the branch where IndexError is raised in get_uncommon_path
+    from pathlib import Path
+
+    from scripts.path_utils import get_uncommon_path
+
+    # a shorter than b, so IndexError will be triggered
+    a = Path('a')
+    b = Path('a/b/c')
+    uncommon_a, uncommon_b = get_uncommon_path(a, b)
+    assert uncommon_a == Path('a')
+    assert uncommon_b == Path('c')
+
+
+def test_mixed_programs_and_shells():
+    _check(
+        [
+            ('/projects/app', 'python', 'app'),
+            ('/projects/app', None, 'app'),
+            ('/projects/api', 'node', 'api'),
+            ('/projects/api', None, 'api'),
+        ]
+    )
+
+
+def test_overlap_same_leaf():
+    _check(
+        [
+            ('/a/test', None, 'a/test'),
+            ('/b/test', None, 'b/test'),
         ]
     )
 
