@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from libtmux.pane import Pane as TmuxPane
 
@@ -25,7 +25,7 @@ class DisplayedPath:
         return DisplayedPath(pane, path, Path(path.name))
 
 
-def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
+def get_uncommon_path(a: Path, b: Path) -> tuple[Path, Path]:
     """Get 2 uncommon path between paths
 
     Args:
@@ -51,7 +51,7 @@ def get_uncommon_path(a: Path, b: Path) -> Tuple[Path, Path]:
     return Path(*a.parts[x:]), Path(*b.parts[x:])
 
 
-def get_exclusive_paths(panes: List[Pane]) -> List[Tuple[Pane, Path]]:
+def get_exclusive_paths(panes: list[Pane]) -> list[tuple[Pane, Path]]:
     """Get exclusive path for each pane (better explaining in the README)
 
     Args:
