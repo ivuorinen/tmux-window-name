@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@2c8613df47424ecdeb54fa0dc0c479bc296e50b6 # v1.2.0
+        uses: astral-sh/setup-uv@b75a909f75acd358c2196fb9a5f1299a9a8868a4 # v6.7.0
 
       - name: Sync dependencies
         run: uv sync --all-extras --python ${{ matrix.python-version }}
