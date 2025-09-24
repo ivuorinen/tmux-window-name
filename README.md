@@ -14,9 +14,9 @@ A plugin to name your tmux windows smartly, like IDE's.
 ## Dependencies
 
 * tmux (Tested on 3.0a)
-* Python 3.6.8+ (Maybe can be lower, tested on 3.6.8)
+* Python 3.9+
 * pip
-* [libtmux](https://github.com/tmux-python/libtmux) >0.16
+* [libtmux](https://github.com/tmux-python/libtmux) >=0.31.0
 
 ## Use case
 
@@ -118,23 +118,75 @@ _**Note**_: if you have a better hook in mind make sure to notify me!
 
 To make the shortest path as possible the plugin finds the shortest not common path if your windows.
 
---- 
+---
 
 ## Installation
 
-### Install libtmux (must)
-_**Note**_: Make sure you are using the `user` python and not `sudo` python or `virutalenv` python!
+### Prerequisites
+
+First, you need to install the Python dependency `libtmux` (>=0.31.0). Choose one of the following methods based on your preference:
+
+**Important:** Verify your Python version first:
+```sh
+python3 --version  # Should be 3.9 or higher
+which python3      # Check which Python tmux will use
+```
+
+#### Option 1: Using pipx (Recommended for isolated installation)
+[pipx](https://pypa.github.io/pipx/) installs Python applications in isolated environments, preventing dependency conflicts.
+
+```sh
+# Install pipx if you haven't already
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+
+# Install libtmux using pipx
+pipx install libtmux
+```
+
+#### Option 2: Using pip with --user flag
+Install to your user's Python directory without requiring sudo:
 
 ```sh
 python3 -m pip install --user libtmux
 ```
 
-### Install dataclasses (for Python 3.6.X only)
+#### Option 3: Using system package manager
+Some distributions provide libtmux as a package:
+
 ```sh
-python3 -m pip install dataclasses --user
+# On Arch Linux/Manjaro
+sudo pacman -S python-libtmux
+
+# On Fedora
+sudo dnf install python3-libtmux
+
+# On macOS with Homebrew (after installing python)
+pip3 install libtmux
 ```
 
-### Installation with [Tmux Plugin Manager](https://github.com/tmux-plugins/tpm) (recommended)
+#### Option 4: Using virtual environment
+For development or testing in an isolated environment:
+
+```sh
+# Create virtual environment
+python3 -m venv ~/.tmux-venv
+
+# Activate it
+source ~/.tmux-venv/bin/activate
+
+# Install libtmux
+pip install libtmux
+
+# Add to your shell RC file to auto-activate
+echo 'source ~/.tmux-venv/bin/activate' >> ~/.bashrc  # or ~/.zshrc
+```
+
+### Plugin Installation
+
+After installing the Python dependencies, install the tmux plugin itself:
+
+#### Installation with [Tmux Plugin Manager](https://github.com/tmux-plugins/tpm) (recommended)
 
 Add plugin to the list of TPM plugins:
 
@@ -151,12 +203,12 @@ set -g @plugin 'tmux-plugins/tmux-resurrect'
 
 Press prefix + I to install it.
 
-### Manual Installation
+#### Manual Installation
 
 Clone the repo:
 
 ```bash
-$ git clone https://github.com/ofirgall/tmux-window-name.git ~/clone/path
+git clone https://github.com/ofirgall/tmux-window-name.git ~/clone/path
 ```
 
 Add this line to your .tmux.conf:
@@ -168,11 +220,68 @@ run-shell ~/clone/path/tmux_window_name.tmux
 Reload TMUX environment with:
 
 ```bash
-$ tmux source-file ~/.tmux.conf
+tmux source-file ~/.tmux.conf
+```
+
+### Troubleshooting
+
+#### Common Issues and Solutions
+
+##### 1. "Python dependency libtmux not found"
+This error means libtmux is not installed or not accessible to tmux.
+
+**Solution:**
+- Verify libtmux is installed: `python3 -c "import libtmux; print(libtmux.__version__)"`
+- Make sure you're using the same Python that tmux uses
+- If using pipx, ensure the pipx bin directory is in your PATH
+- If using virtual environment, ensure it's activated before starting tmux
+
+##### 2. Script fails with fish shell
+If windows aren't being renamed properly when using fish shell:
+
+**Solution:**
+- Update to the latest version of the plugin (this issue has been fixed)
+- The plugin now handles login shells with dash prefix (e.g., `-fish`)
+
+##### 3. Windows not being renamed
+Check if the plugin is properly enabled:
+
+```bash
+# Check if hooks are set
+tmux show-hooks -g | grep tmux-window-name
+
+# Check if the script is executable
+ls -la ~/.tmux/plugins/tmux-window-name/scripts/rename_session_windows.py
+
+# Check logs for errors (if debug mode is enabled)
+tail -f /tmp/tmux-window-name.log
+```
+
+##### 4. Permission denied errors
+If you get permission errors when running the script:
+
+**Solution:**
+```bash
+# Make the script executable
+chmod +x ~/.tmux/plugins/tmux-window-name/scripts/rename_session_windows.py
+chmod +x ~/.tmux/plugins/tmux-window-name/tmux_window_name.tmux
+```
+
+##### 5. Using with pyenv or other Python version managers
+If you use pyenv, rbenv, or similar tools, ensure tmux can find the correct Python:
+
+**Solution:**
+Add to your `.tmux.conf` before loading the plugin:
+```tmux.conf
+# For pyenv
+set-environment -g PATH "$HOME/.pyenv/shims:$PATH"
+
+# For a specific Python path
+set-environment -g PYTHON_PATH "/usr/local/bin/python3"
 ```
 
 ## Configuration Options
-_**Note**_: All options are evaluated with [eval](https://docs.python.org/3/library/functions.html#eval) be careful!
+_**Note**_: Options are parsed using safe evaluation methods (`ast.literal_eval` and `json.loads`) to prevent code injection. Complex Python expressions are supported for list and dictionary options.
 
 ### `@tmux_window_name_shells`
 
@@ -249,7 +358,7 @@ set -g @tmux_window_name_substitute_sets "[('.+ipython([32])', 'ipython\g<1>'), 
 ### `@tmux_window_name_dir_substitute_sets`
 
 Replace dir lines with [re.sub](https://docs.python.org/3/library/re.html#re.sub). \
-The options expect list of tuples with 2 elements, `pattern` and `repl` as above. 
+The options expect list of tuples with 2 elements, `pattern` and `repl` as above.
 E.g: The example below will replace `tmux-resurrect` with `resurrect`
 
 ```tmux.conf
@@ -314,10 +423,98 @@ set -g @tmux_window_name_log_level "'WARNING'"
 ---
 
 # Development
-Run `ruff format` before applying PR
 
-# Testing
-Run `pytest` at the root dir
+## Setting up the development environment
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ofirgall/tmux-window-name.git
+cd tmux-window-name
+```
+
+2. Install [uv](https://github.com/astral-sh/uv) if you haven't already (one-time):
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# or: brew install uv
+```
+
+3. Sync development dependencies (creates/updates `.venv`):
+```bash
+make install
+```
+
+For better IDE support, you may also want to:
+```bash
+# Add scripts to PYTHONPATH for your shell session
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/scripts"
+
+# Or for IDE configuration, see the pyrightconfig.json and .vscode/settings.json files
+```
+
+4. Install pre-commit hooks:
+```bash
+make precommit-install
+```
+
+## Pre-commit hooks
+
+This project uses [pre-commit](https://pre-commit.com/) to maintain code quality. The hooks will run automatically before each commit.
+
+### Included hooks:
+- **ruff**: Python formatting and linting
+- **mypy**: Type checking
+- **bandit**: Security vulnerability scanning
+- **shellcheck**: Shell script linting
+- **markdownlint**: Markdown formatting
+- **yamllint**: YAML validation
+- Various general checks (trailing whitespace, merge conflicts, large files, etc.)
+
+### Manual runs:
+```bash
+# Run all hooks on all files
+make precommit
+
+# Run specific hook
+PRECOMMIT_ARGS="ruff --all-files" make precommit
+
+# Update hooks to latest versions
+make precommit-autoupdate
+```
+
+## Code formatting
+
+The project uses `ruff` for Python code formatting and linting:
+
+```bash
+# Format code
+make format
+
+# Check linting issues (with fixes)
+make check
+
+# Lint without modifying files
+make lint
+```
+
+## Testing
+
+Run tests using pytest (via [uv](https://github.com/astral-sh/uv)) and disable
+auto-loaded plugins that might rely on system paths:
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+make coverage
+
+# Run specific test file or pattern
+make test PYTEST_ARGS="tests/test_icons.py"
+make test PYTEST_ARGS="-k icons -vv"
+
+# After changing dependencies
+make install
+```
 
 ---
 

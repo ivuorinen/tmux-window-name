@@ -1,5 +1,42 @@
+[build-system]
+requires = ["setuptools>=67.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tmux-window-name"
+description = "A tmux plugin to name your windows smartly"
+readme = "README.md"
+version = "0.0.0"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Ofir Gal"},
+    {name = "Ismo Vuorinen"}
+]
+dependencies = [
+    "libtmux>=0.31.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ofirgall/tmux-window-name"
+Repository = "https://github.com/ofirgall/tmux-window-name"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock",
+    "pre-commit>=3.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "bandit[toml]>=1.7.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["scripts", "scripts.*"]
+
 [tool.ruff]
-target-version = 'py37'
+target-version = 'py39'
 line-length = 120
 exclude = [
     "migrations",
@@ -12,6 +49,102 @@ exclude = [
     ".venv",
 ]
 
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "B",     # flake8-bugbear
+    "S",     # flake8-bandit (security)
+    "I",     # isort
+    "UP",    # pyupgrade
+    "N",     # pep8-naming
+    "ASYNC", # flake8-async
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "EM",    # flake8-errmsg
+    "ISC",   # flake8-implicit-str-concat
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "Q",     # flake8-quotes
+    "RET",   # flake8-return
+    "SIM",   # flake8-simplify
+    "TCH",   # flake8-type-checking
+    "ARG",   # flake8-unused-arguments
+    "PTH",   # flake8-use-pathlib
+]
+
+ignore = [
+    "S101",   # Use of assert detected (needed for tests)
+    "S603",   # subprocess without shell equals true
+    "S607",   # Starting process with partial path
+    "B006",   # Do not use mutable data structures for defaults
+    "PTH123", # open() instead of Path.open() - existing code uses open()
+    "Q000",   # Disable conflicting quote rules for formatter
+    "Q003",   # Disable conflicting quote rules for formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "ARG001", "ARG002"]
+"scripts/rename_session_windows.py" = ["S608"]  # SQL injection warning (false positive for tmux commands)
+
+[tool.ruff.lint.isort]
+known-first-party = ["path_utils"]
+
 [tool.ruff.format]
 docstring-code-format = true
 quote-style = "single"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv"]
+skips = ["B101"]  # assert_used
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=scripts",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=40",  # Minimum coverage threshold
+]
+filterwarnings = [
+    "ignore:Marks applied to fixtures have no effect:pytest.PytestRemovedIn9Warning",
+]
+
+[tool.coverage.run]
+source = ["scripts"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "pass",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"

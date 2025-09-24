@@ -1,0 +1,22 @@
+{
+  "include": [
+    "scripts",
+    "tests"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    ".git",
+    ".venv",
+    "venv"
+  ],
+  "extraPaths": [
+    "./scripts"
+  ],
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.9",
+  "pythonPlatform": "All",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportGeneralTypeIssues": true,
+  "reportOptionalMemberAccess": false
+}
